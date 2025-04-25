@@ -15,14 +15,6 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 }
 
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits.Add(1)
-		log.Printf("Request received, hits now: %d", cfg.fileserverHits.Load())
-		next.ServeHTTP(w, r)
-	})
-}
-
 func main() {
 	cfg := &apiConfig{}
 	mux := http.NewServeMux()
@@ -31,8 +23,8 @@ func main() {
 		cfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(fileRootPath)))),
 	)
 	mux.HandleFunc("/healthz", handlerReadiness)
-	mux.HandleFunc("/metrics", cfg.handlerWriteRequests())
-	mux.HandleFunc("/reset", cfg.handlerResetRequests())
+	mux.HandleFunc("/metrics", cfg.handlerMetrics)
+	mux.HandleFunc("/reset", cfg.handlerReset)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
@@ -43,26 +35,15 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func handlerReadiness(w http.ResponseWriter, req *http.Request) {
+func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cfg.fileserverHits.Add(1)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(200)
-	w.Write([]byte("OK"))
-}
-
-func (cfg *apiConfig) handlerWriteRequests() func(w http.ResponseWriter, req *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		var count int32 = cfg.fileserverHits.Load()
-		str := fmt.Sprintf("Hits: %d", count)
-		w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(200)
-		w.Write([]byte(str))
-	}
-}
-
-func (cfg *apiConfig) handlerResetRequests() func(w http.ResponseWriter, req *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
-		cfg.fileserverHits.Store(0)
-		w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(200)
-	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())))
 }
