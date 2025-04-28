@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, req *http.Request) {
@@ -27,7 +28,21 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, returnVals{
-		Valid: true,
+	resp := cleanBody(params.Body)
+	respondWithJSON(w, http.StatusOK, struct {
+		Cleaned_Body string `json:"cleaned_body"`
+	}{
+		Cleaned_Body: resp,
 	})
+}
+
+func cleanBody(body string) string {
+	words := strings.Split(body, " ")
+	for i, word := range words {
+		if strings.ToLower(word) == "kerfuffle" || strings.ToLower(word) == "sharbert" ||
+			strings.ToLower(word) == "fornax" {
+			words[i] = "****"
+		}
+	}
+	return strings.Join(words, " ")
 }
