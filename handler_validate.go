@@ -11,7 +11,7 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, req *http.Request) 
 		Body string `json:"body"`
 	}
 	type returnVals struct {
-		Valid bool `json:"valid"`
+		Cleaned_Body string `json:"cleaned_body"`
 	}
 
 	decorder := json.NewDecoder(req.Body)
@@ -28,19 +28,22 @@ func (cfg *apiConfig) handlerValidate(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	resp := cleanBody(params.Body)
-	respondWithJSON(w, http.StatusOK, struct {
-		Cleaned_Body string `json:"cleaned_body"`
-	}{
-		Cleaned_Body: resp,
+	badWords := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+	cleaned := getCleanedBody(params.Body, badWords)
+	respondWithJSON(w, http.StatusOK, returnVals{
+		Cleaned_Body: cleaned,
 	})
 }
 
-func cleanBody(body string) string {
+func getCleanedBody(body string, badWords map[string]struct{}) string {
 	words := strings.Split(body, " ")
 	for i, word := range words {
-		if strings.ToLower(word) == "kerfuffle" || strings.ToLower(word) == "sharbert" ||
-			strings.ToLower(word) == "fornax" {
+		loweredWord := strings.ToLower(word)
+		if _, ok := badWords[loweredWord]; ok {
 			words[i] = "****"
 		}
 	}
