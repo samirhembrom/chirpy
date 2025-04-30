@@ -13,26 +13,31 @@ import (
 	"github.com/samirhembrom/chirpy/internal/database"
 )
 
-const fileRootPath = "."
-
-const port = "8080"
-
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	dbQueries      *database.Queries
+	db             *database.Queries
 }
 
 func main() {
+	const fileRootPath = "."
+	const port = "8080"
+
 	godotenv.Load()
 	dbUrl := os.Getenv("DB_URL")
+	if dbUrl == "" {
+		log.Fatal("DB_URL must be set.(env file)")
+	}
+
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
-		log.Fatalf("error connecting to database %v", err)
+		log.Fatalf("error connecting to database %s", err)
 	}
 	dbQueries := database.New(db)
 
-	cfg := &apiConfig{}
-	cfg.dbQueries = dbQueries
+	cfg := &apiConfig{
+		fileserverHits: atomic.Int32{},
+		db:             dbQueries,
+	}
 	mux := http.NewServeMux()
 	mux.Handle(
 		"/app/",
