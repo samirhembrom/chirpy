@@ -2,25 +2,18 @@ package main
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net/http"
 )
 
 func (cfg *apiConfig) handlerReset(w http.ResponseWriter, req *http.Request) {
 	if cfg.platform != "dev" {
-		respondWithError(
-			w,
-			http.StatusForbidden,
-			"You don't have access",
-			errors.New("Non dev user tring to access"),
-		)
-	}
-	err := cfg.db.DeleteUsers(context.Background())
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't delete users", err)
-		return
+		w.WriteHeader(http.StatusForbidden)
+		w.Write(fmt.Appendf(nil, `Reset is only allowed in dev environment.`))
 	}
 	cfg.fileserverHits.Store(0)
+	cfg.db.Reset(context.Background())
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(200)
+	w.Write(fmt.Appendf(nil, "Hits reset to 0 and database reset to initial state."))
 }

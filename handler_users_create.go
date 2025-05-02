@@ -7,19 +7,21 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/samirhembrom/chirpy/internal/database"
 )
+
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
 
 func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, req *http.Request) {
 	type parameter struct {
 		Email string `json:"email"`
 	}
-	type returnVals struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
+	type response struct {
+		User
 	}
 
 	decoder := json.NewDecoder(req.Body)
@@ -30,23 +32,18 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := cfg.db.CreateUser(context.Background(), database.CreateUserParams{
-		ID:        uuid.New(),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		Email:     params.Email,
-	})
+	user, err := cfg.db.CreateUser(context.Background(), params.Email)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create user", err)
 		return
 	}
 
-	resp := returnVals{
-		user.ID,
-		user.CreatedAt,
-		user.UpdatedAt,
-		user.Email,
-	}
-
-	respondWithJSON(w, http.StatusCreated, resp)
+	respondWithJSON(w, http.StatusCreated, response{
+		User: User{
+			ID:        user.ID,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+			Email:     user.Email,
+		},
+	})
 }
