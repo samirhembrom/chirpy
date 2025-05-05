@@ -8,7 +8,7 @@ import (
 	"github.com/samirhembrom/chirpy/internal/auth"
 )
 
-func (cfg *apiConfig) handlerUsersLogin(w http.ResponseWriter, req *http.Request) {
+func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, req *http.Request) {
 	type parameter struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
