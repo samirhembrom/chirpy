@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -8,33 +9,34 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type TokenType string
+
+const (
+	TokenTypeAccess TokenType = "chirpy-access"
+)
+
 func HashPassword(password string) (string, error) {
-	passwordByte := []byte(password)
-	hashedPasswordByte, err := bcrypt.GenerateFromPassword(passwordByte, 10)
+	dat, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
-	hashedPassword := string(hashedPasswordByte)
-	return hashedPassword, nil
+	return string(dat), nil
 }
 
-func CheckPasswordHash(hash, password string) error {
-	passwordByte := []byte(password)
-	hashByte := []byte(hash)
-	err := bcrypt.CompareHashAndPassword(hashByte, passwordByte)
-	return err
+func CheckPasswordHash(password, hash string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
+	signingKey := []byte(tokenSecret)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer:    "chirpy",
+		Issuer:    string(TokenTypeAccess),
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
 		Subject:   userID.String(),
 	})
 
-	tokenSecretBytes := []byte(tokenSecret)
-	jwt, err := token.SignedString(tokenSecretBytes)
+	jwt, err := token.SignedString(signingKey)
 	if err != nil {
 		return "", err
 	}
@@ -57,6 +59,14 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	user_idString, err := token.Claims.GetSubject()
 	if err != nil {
 		return uuid.Nil, err
+	}
+
+	issuer, err := token.Claims.GetIssuer()
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if issuer != string(TokenTypeAccess) {
+		return uuid.Nil, errors.New("invalid issuer")
 	}
 
 	user_id, err := uuid.Parse(user_idString)
