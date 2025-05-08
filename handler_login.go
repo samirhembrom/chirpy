@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -54,16 +53,12 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	refreshTokenExpiration := time.Duration(24) * time.Hour * 60
 	refreshTokenDb, err := cfg.db.CreateRefreshToken(
 		context.Background(),
 		database.CreateRefreshTokenParams{
 			Token:     refreshToken,
 			UserID:    user.ID,
-			ExpiresAt: time.Now().Add(refreshTokenExpiration),
-			RevokedAt: sql.NullTime{
-				Valid: false,
-			},
+			ExpiresAt: time.Now().UTC().Add(time.Hour * 24 * 60),
 		},
 	)
 	if err != nil {
