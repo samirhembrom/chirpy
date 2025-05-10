@@ -19,7 +19,7 @@ type User struct {
 	Email     string    `json:"email"`
 }
 
-func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, req *http.Request) {
+func (cfg *apiConfig) handlerUsersCreate(w http.ResponseWriter, req *http.Request) {
 	type parameter struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
