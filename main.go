@@ -18,7 +18,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	secret         string
-	apiKey         string
+	polkaKey       string
 }
 
 func main() {
@@ -38,8 +38,8 @@ func main() {
 	if platform == "" {
 		log.Fatal("SECRET must be set")
 	}
-	apiKey := os.Getenv("POLKA_KEY")
-	if apiKey == "" {
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == "" {
 		log.Fatal("Polka key must be set")
 	}
 
@@ -54,7 +54,7 @@ func main() {
 		db:             dbQueries,
 		platform:       platform,
 		secret:         secret,
-		apiKey:         apiKey,
+		polkaKey:       polkaKey,
 	}
 	mux := http.NewServeMux()
 	mux.Handle(

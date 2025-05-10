@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -19,11 +18,12 @@ func (cfg *apiConfig) handlerWebhook(w http.ResponseWriter, req *http.Request) {
 		respondWithError(w, http.StatusUnauthorized, "Header malformed", err)
 		return
 	}
-	fmt.Printf("APIKEY::%v\nENV::%v\n", apiKey, cfg.apiKey)
-	if apiKey != cfg.apiKey {
+
+	if apiKey != cfg.polkaKey {
 		respondWithError(w, http.StatusUnauthorized, "Unauthorized access", err)
 		return
 	}
+
 	type parameter struct {
 		Event string `json:"event"`
 		Data  struct {
