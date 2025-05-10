@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/google/uuid"
-
 	"github.com/samirhembrom/chirpy/internal/auth"
 	"github.com/samirhembrom/chirpy/internal/database"
 )
@@ -64,42 +62,4 @@ func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, req *http.Reques
 			IsChirpyRed: user.IsChirpyRed,
 		},
 	})
-}
-
-func (cfg *apiConfig) handlerChirpyRed(w http.ResponseWriter, req *http.Request) {
-	type parameter struct {
-		Event string `json:"event"`
-		Data  struct {
-			UserID string `json:"user_id"`
-		} `json:"data"`
-	}
-	decoder := json.NewDecoder(req.Body)
-	params := &parameter{}
-	err := decoder.Decode(&params)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
-		return
-	}
-
-	if params.Event != "user.upgraded" {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	user_id, err := uuid.Parse(params.Data.UserID)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Cannot parse uuid", err)
-		return
-	}
-
-	_, err = cfg.db.UpdateUserRed(context.Background(), database.UpdateUserRedParams{
-		ID:          user_id,
-		IsChirpyRed: true,
-	})
-	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Cannot find uuid", err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }

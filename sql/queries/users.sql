@@ -21,6 +21,6 @@ RETURNING *;
 
 -- name: UpdateUserRed :one
 UPDATE users
-SET is_chirpy_red = $1, updated_at = NOW()
-WHERE id = $2
+SET is_chirpy_red = true, updated_at = NOW()
+WHERE id = $1
 RETURNING *;
