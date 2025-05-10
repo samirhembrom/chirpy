@@ -8,47 +8,37 @@ import (
 )
 
 func (cfg *apiConfig) handlerChirpsRetrieve(w http.ResponseWriter, req *http.Request) {
-	s := req.URL.Query().Get("author_id")
-	if s != "" {
-		user_id, err := uuid.Parse(s)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Couldn't parse auther id", err)
-			return
-		}
-		chirpsDb, err := cfg.db.ListChirpsByUser(context.Background(), user_id)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Couldn't fetch chirps", err)
-			return
-		}
-		chirps := []Chirp{}
-		for _, chirp := range chirpsDb {
-			chirps = append(chirps, Chirp{
-				ID:         chirp.ID,
-				Created_At: chirp.CreatedAt,
-				Updated_At: chirp.UpdatedAt,
-				Body:       chirp.Body,
-				User_Id:    chirp.UserID,
-			})
-		}
-		respondWithJSON(w, http.StatusOK, chirps)
-		return
-	}
-	chirpsDb, err := cfg.db.ListChirps(context.Background())
+	dbChirps, err := cfg.db.ListChirps(req.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't fetch chirps", err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't retrieve chirps", err)
 		return
 	}
 
+	authorID := uuid.Nil
+	authorIDString := req.URL.Query().Get("author_id")
+	if authorIDString != "" {
+		authorID, err = uuid.Parse(authorIDString)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "Invalid author ID", err)
+			return
+		}
+	}
+
 	chirps := []Chirp{}
-	for _, chirp := range chirpsDb {
+	for _, dbChirp := range dbChirps {
+		if authorID != uuid.Nil && dbChirp.UserID != authorID {
+			continue
+		}
+
 		chirps = append(chirps, Chirp{
-			ID:         chirp.ID,
-			Created_At: chirp.CreatedAt,
-			Updated_At: chirp.UpdatedAt,
-			Body:       chirp.Body,
-			User_Id:    chirp.UserID,
+			ID:         dbChirp.ID,
+			Created_At: dbChirp.CreatedAt,
+			Updated_At: dbChirp.UpdatedAt,
+			User_Id:    dbChirp.UserID,
+			Body:       dbChirp.Body,
 		})
 	}
+
 	respondWithJSON(w, http.StatusOK, chirps)
 }
 
