@@ -46,5 +46,5 @@ func (cfg *apiConfig) handlerChirpsDelete(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	w.WriteHeader(204)
+	w.WriteHeader(http.StatusNoContent)
 }
